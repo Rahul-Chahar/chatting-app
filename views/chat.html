@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChatPro - Chat Window</title>
+    <!-- Tailwind CSS CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center">
+        <!-- Logo or Icon (optional) -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-8 w-8 text-blue-500 mr-2"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"
+          />
+        </svg>
+        <span class="text-xl font-bold text-gray-800">ChatPro</span>
+      </div>
+      <!-- Optionally, add a profile or settings icon on the right -->
+      <div>
+        <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A13.937 13.937 0 0112 15c2.99 0 5.79.973 7.879 2.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Chat Container -->
+    <div class="max-w-3xl mx-auto my-6 bg-white shadow rounded-lg flex flex-col h-[80vh]">
+      <!-- Message List (scrollable) -->
+      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4">
+        <!-- Example Receiver Message -->
+        <div class="flex items-end">
+          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none">
+            <p>Hello! How are you doing today?</p>
+            <span class="text-xs text-gray-500 self-end">10:15 AM</span>
+          </div>
+        </div>
+
+        <!-- Example Sender Message -->
+        <div class="flex items-end justify-end">
+          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none">
+            <p>I'm doing well, thank you! And you?</p>
+            <span class="text-xs text-blue-200 self-end">10:16 AM</span>
+          </div>
+        </div>
+
+        <!-- Additional sample messages -->
+        <div class="flex items-end">
+          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none">
+            <p>I'm great, thanks for asking!</p>
+            <span class="text-xs text-gray-500 self-end">10:17 AM</span>
+          </div>
+        </div>
+        <div class="flex items-end justify-end">
+          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none">
+            <p>Glad to hear that.</p>
+            <span class="text-xs text-blue-200 self-end">10:18 AM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Input Area -->
+      <div class="border-t border-gray-200 px-4 py-3">
+        <form id="messageForm" class="flex items-center">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            required
+          />
+          <button
+            type="submit"
+            class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            title="Send"
+          >
+            <!-- Send Icon (rotated arrow) -->
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 transform rotate-90"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
+              />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Optional JavaScript to Simulate Message Sending -->
+    <script>
+      document.getElementById("messageForm").addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent form default submission
+        const messageInput = document.getElementById("messageInput");
+        const messageText = messageInput.value.trim();
+        if (!messageText) return;
+
+        // Clear the input field
+        messageInput.value = "";
+
+        // Create a new message bubble for the sender
+        const messageContainer = document.createElement("div");
+        messageContainer.className = "flex items-end justify-end";
+        const messageBubble = document.createElement("div");
+        messageBubble.className =
+          "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
+        // Message text
+        const messagePara = document.createElement("p");
+        messagePara.textContent = messageText;
+        // Timestamp (use current time)
+        const timestamp = document.createElement("span");
+        timestamp.className = "text-xs text-blue-200 self-end";
+        const now = new Date();
+        timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        // Append elements
+        messageBubble.appendChild(messagePara);
+        messageBubble.appendChild(timestamp);
+        messageContainer.appendChild(messageBubble);
+        document.getElementById("chatMessages").appendChild(messageContainer);
+
+        // Scroll to the bottom
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+    </script>
+  </body>
+</html>
