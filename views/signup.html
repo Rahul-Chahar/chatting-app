@@ -9,7 +9,6 @@
     <title>Chat App - Sign Up</title>
 
     <!-- Tailwind CSS CDN -->
-    <!-- Using a CDN for Tailwind CSS for quick styling -->
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
@@ -17,19 +16,12 @@
   </head>
 
   <body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen flex items-center justify-center">
-    <!--
-      Main Container:
-      - Uses a white background with rounded corners and a subtle shadow to create a card-like appearance.
-      - This container is centered both vertically and horizontally.
-    -->
+    <!-- Main container for the signup form -->
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-      <!-- Application Title / Branding -->
       <h2 class="text-2xl font-bold text-center mb-6">Join ChatNow!</h2>
 
       <!-- Signup Form -->
-      <!-- The form uses the POST method and is set to submit to "/signup".
-           Later, you can hook this route up to your authentication logic. -->
-      <form action="/signup" method="POST">
+      <form id="signupForm">
         <!-- Name Input Field -->
         <div class="mb-4">
           <label for="name" class="block text-gray-700">Name</label>
@@ -91,5 +83,44 @@
         </button>
       </form>
     </div>
+
+    <!-- JavaScript to handle form submission -->
+    <script>
+      document.getElementById('signupForm').addEventListener('submit', async function (event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Retrieve values from the form fields
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const password = document.getElementById('password').value;
+
+        try {
+          // Call the /signup API using fetch
+          const response = await fetch('/signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, email, phone, password })
+          });
+
+          const data = await response.json();
+
+          // Check the status and show the appropriate alert
+          if (response.status === 201) {
+            alert('Successfully signed up');
+            // Optionally, you might redirect the user here
+          } else if (response.status === 409) {
+            alert('User already exists, Please Login');
+          } else {
+            alert('Error: ' + data.message);
+          }
+        } catch (error) {
+          console.error('Error during signup:', error);
+          alert('An error occurred. Please try again later.');
+        }
+      });
+    </script>
   </body>
 </html>
