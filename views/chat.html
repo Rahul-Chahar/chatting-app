@@ -123,40 +123,52 @@
     </div>
 
     <!-- Optional JavaScript to Simulate Message Sending -->
-    <script>
-      document.getElementById("messageForm").addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent form default submission
-        const messageInput = document.getElementById("messageInput");
-        const messageText = messageInput.value.trim();
-        if (!messageText) return;
+   <!-- Example snippet from chat.html -->
+<script>
+  // Assume window.userId is set after login; for demo purposes, we use 1.
+  window.userId = 1;
 
-        // Clear the input field
-        messageInput.value = "";
+  document.getElementById("messageForm").addEventListener("submit", async function (event) {
+    event.preventDefault(); // Prevent default form submission
+    const messageInput = document.getElementById("messageInput");
+    const messageText = messageInput.value.trim();
+    if (!messageText) return;
 
-        // Create a new message bubble for the sender
-        const messageContainer = document.createElement("div");
-        messageContainer.className = "flex items-end justify-end";
-        const messageBubble = document.createElement("div");
-        messageBubble.className =
-          "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
-        // Message text
-        const messagePara = document.createElement("p");
-        messagePara.textContent = messageText;
-        // Timestamp (use current time)
-        const timestamp = document.createElement("span");
-        timestamp.className = "text-xs text-blue-200 self-end";
-        const now = new Date();
-        timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        // Append elements
-        messageBubble.appendChild(messagePara);
-        messageBubble.appendChild(timestamp);
-        messageContainer.appendChild(messageBubble);
-        document.getElementById("chatMessages").appendChild(messageContainer);
+    // Clear the input field
+    messageInput.value = "";
 
-        // Scroll to the bottom
-        const chatMessages = document.getElementById("chatMessages");
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+    // Update the chat UI with the new message (this is your local UI update)
+    const chatMessages = document.getElementById("chatMessages");
+    const messageContainer = document.createElement("div");
+    messageContainer.className = "flex items-end justify-end";
+    const messageBubble = document.createElement("div");
+    messageBubble.className = "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
+    const messagePara = document.createElement("p");
+    messagePara.textContent = messageText;
+    const timestamp = document.createElement("span");
+    timestamp.className = "text-xs text-blue-200 self-end";
+    const now = new Date();
+    timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    messageBubble.appendChild(messagePara);
+    messageBubble.appendChild(timestamp);
+    messageContainer.appendChild(messageBubble);
+    chatMessages.appendChild(messageContainer);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Send the message to the backend to store it in the database.
+    try {
+      const response = await fetch('/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: window.userId, message: messageText })
       });
-    </script>
+      const data = await response.json();
+      console.log('Message stored:', data);
+    } catch (error) {
+      console.error('Error storing message:', error);
+    }
+  });
+</script>
+
   </body>
 </html>

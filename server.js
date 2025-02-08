@@ -1,36 +1,37 @@
 // server.js
-require('dotenv').config(); // Load environment variables from .env
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const db = require('./models'); // Sequelize instance and models
+const db = require('./models');
 const authRoutes = require('./routes/auth');
+const messageRoutes = require('./routes/message');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Use CORS with modern configuration.
+// Use CORS with modern configuration
 app.use(cors({
-  origin: "*", // Adjust as needed; you can restrict this to your frontend domain
+  origin: "*", // Adjust as needed for your environment
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Parse JSON and URL-encoded data.
+// Parse incoming JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static HTML files from the 'views' directory.
+// Serve static HTML files from the 'views' directory
 app.use(express.static(path.join(__dirname, 'views')));
 
-// Use the authentication routes.
+// Use your authentication and message routes
 app.use('/', authRoutes);
+app.use('/', messageRoutes);
 
-// Connect to MySQL and sync Sequelize models.
+// Sync the Sequelize models with the database and start the server
 db.sequelize.sync()
   .then(() => {
     console.log('Database synced successfully.');
-    // Start the Express server.
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
