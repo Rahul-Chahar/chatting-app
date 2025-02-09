@@ -124,51 +124,103 @@
 
     <!-- Optional JavaScript to Simulate Message Sending -->
    <!-- Example snippet from chat.html -->
-<script>
-  // Assume window.userId is set after login; for demo purposes, we use 1.
-  window.userId = 1;
-
-  document.getElementById("messageForm").addEventListener("submit", async function (event) {
-    event.preventDefault(); // Prevent default form submission
-    const messageInput = document.getElementById("messageInput");
-    const messageText = messageInput.value.trim();
-    if (!messageText) return;
-
-    // Clear the input field
-    messageInput.value = "";
-
-    // Update the chat UI with the new message (this is your local UI update)
-    const chatMessages = document.getElementById("chatMessages");
-    const messageContainer = document.createElement("div");
-    messageContainer.className = "flex items-end justify-end";
-    const messageBubble = document.createElement("div");
-    messageBubble.className = "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
-    const messagePara = document.createElement("p");
-    messagePara.textContent = messageText;
-    const timestamp = document.createElement("span");
-    timestamp.className = "text-xs text-blue-200 self-end";
-    const now = new Date();
-    timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    messageBubble.appendChild(messagePara);
-    messageBubble.appendChild(timestamp);
-    messageContainer.appendChild(messageBubble);
-    chatMessages.appendChild(messageContainer);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    // Send the message to the backend to store it in the database.
-    try {
-      const response = await fetch('/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: window.userId, message: messageText })
-      });
-      const data = await response.json();
-      console.log('Message stored:', data);
-    } catch (error) {
-      console.error('Error storing message:', error);
+   <script>
+    // Assume window.userId is set after login; for demo purposes, we use 1.
+    window.userId = 1;
+  
+    // Function to fetch and display all messages from the backend
+    async function fetchMessages() {
+      try {
+        const response = await fetch('/messages');
+        const data = await response.json();
+        const chatMessages = document.getElementById("chatMessages");
+        
+        // Clear existing messages
+        chatMessages.innerHTML = "";
+  
+        // Loop through each message from the database and create a chat bubble
+        data.messages.forEach((msg) => {
+          const messageContainer = document.createElement("div");
+          // Determine if the message is from the sender (current user) or someone else
+          const isSender = msg.userId === window.userId;
+          messageContainer.className = isSender ? "flex items-end justify-end" : "flex items-end";
+  
+          const messageBubble = document.createElement("div");
+          messageBubble.className = isSender ?
+            "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none" :
+            "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
+  
+          const messagePara = document.createElement("p");
+          messagePara.textContent = msg.message;
+  
+          const timestamp = document.createElement("span");
+          timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
+          // Format the createdAt timestamp (assuming the API returns msg.createdAt)
+          timestamp.textContent = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  
+          messageBubble.appendChild(messagePara);
+          messageBubble.appendChild(timestamp);
+          messageContainer.appendChild(messageBubble);
+          chatMessages.appendChild(messageContainer);
+        });
+  
+        // Scroll to the bottom of the chat messages area
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
     }
-  });
-</script>
+  
+    // Fetch messages when the page loads
+    window.addEventListener("load", fetchMessages);
+  
+    // Handle sending a new message
+    document.getElementById("messageForm").addEventListener("submit", async function (event) {
+      event.preventDefault(); // Prevent default form submission
+  
+      const messageInput = document.getElementById("messageInput");
+      const messageText = messageInput.value.trim();
+      if (!messageText) return;
+  
+      // Clear the input field
+      messageInput.value = "";
+  
+      // Local UI update for immediate feedback (optional)
+      const chatMessages = document.getElementById("chatMessages");
+      const messageContainer = document.createElement("div");
+      messageContainer.className = "flex items-end justify-end";
+      const messageBubble = document.createElement("div");
+      messageBubble.className = "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
+      const messagePara = document.createElement("p");
+      messagePara.textContent = messageText;
+      const timestamp = document.createElement("span");
+      timestamp.className = "text-xs text-blue-200 self-end";
+      const now = new Date();
+      timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      messageBubble.appendChild(messagePara);
+      messageBubble.appendChild(timestamp);
+      messageContainer.appendChild(messageBubble);
+      chatMessages.appendChild(messageContainer);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+  
+      // Send the message to the backend to store it in the database.
+      try {
+        const response = await fetch('/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: window.userId, message: messageText })
+        });
+        const data = await response.json();
+        console.log('Message stored:', data);
+        
+        // Optionally, refresh the entire list from the database after storing:
+        // await fetchMessages();
+      } catch (error) {
+        console.error('Error storing message:', error);
+      }
+    });
+  </script>
+  
 
   </body>
 </html>

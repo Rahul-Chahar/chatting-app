@@ -24,3 +24,16 @@ exports.sendMessage = async (req, res) => {
     return res.status(500).json({ message: 'Server error.' });
   }
 };
+
+exports.getAllMessages = async (req, res) => {
+  try {
+    // Retrieve all messages, ordered by creation time (oldest first)
+    const messages = await Message.findAll({
+      order: [['createdAt', 'ASC']]
+    });
+    return res.status(200).json({ messages });
+  } catch (error) {
+    console.error('Error retrieving messages:', error);
+    return res.status(500).json({ message: 'Server error retrieving messages.' });
+  }
+};
