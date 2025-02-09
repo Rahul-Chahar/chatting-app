@@ -1,209 +1,226 @@
+<!-- views/chat.html -->
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ChatPro - Chat Window</title>
-    <!-- Tailwind CSS CDN -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-gray-100">
-    <!-- Navigation Bar -->
-    <nav class="bg-white shadow px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center">
-        <!-- Logo or Icon (optional) -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-8 w-8 text-blue-500 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"
-          />
-        </svg>
-        <span class="text-xl font-bold text-gray-800">ChatPro</span>
-      </div>
-      <!-- Optionally, add a profile or settings icon on the right -->
-      <div>
-        <button class="text-gray-600 hover:text-gray-800 focus:outline-none">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.121 17.804A13.937 13.937 0 0112 15c2.99 0 5.79.973 7.879 2.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"
-            />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat App - Chat Room</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Socket.io client library -->
+  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js" integrity="sha384-y5dp9pns3uPySeGLr/2iS5S7DQTzIrtC3c6/5LroL6Ey7H+6SakFbF+Pq2NUTNEE" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Navigation Bar -->
+  <nav class="bg-white shadow px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center">
+      <span class="text-xl font-bold text-gray-800">ChatApp</span>
+    </div>
+    <div>
+      <button id="logoutBtn" class="text-gray-600 hover:text-gray-800">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Chat Container -->
+  <div class="max-w-3xl mx-auto my-6 bg-white shadow rounded-lg flex flex-col h-[80vh]">
+    <!-- Message List -->
+    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4"></div>
+    <!-- Message Input Area -->
+    <div class="border-t border-gray-200 px-4 py-3">
+      <form id="messageForm" class="flex items-center">
+        <input type="text" id="messageInput" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required>
+        <button type="submit" class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" title="Send">
+          <!-- Send Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
         </button>
-      </div>
-    </nav>
-
-    <!-- Main Chat Container -->
-    <div class="max-w-3xl mx-auto my-6 bg-white shadow rounded-lg flex flex-col h-[80vh]">
-      <!-- Message List (scrollable) -->
-      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4">
-        <!-- Example Receiver Message -->
-        <div class="flex items-end">
-          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none">
-            <p>Hello! How are you doing today?</p>
-            <span class="text-xs text-gray-500 self-end">10:15 AM</span>
-          </div>
-        </div>
-
-        <!-- Example Sender Message -->
-        <div class="flex items-end justify-end">
-          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none">
-            <p>I'm doing well, thank you! And you?</p>
-            <span class="text-xs text-blue-200 self-end">10:16 AM</span>
-          </div>
-        </div>
-
-        <!-- Additional sample messages -->
-        <div class="flex items-end">
-          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none">
-            <p>I'm great, thanks for asking!</p>
-            <span class="text-xs text-gray-500 self-end">10:17 AM</span>
-          </div>
-        </div>
-        <div class="flex items-end justify-end">
-          <div class="flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none">
-            <p>Glad to hear that.</p>
-            <span class="text-xs text-blue-200 self-end">10:18 AM</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Message Input Area -->
-      <div class="border-t border-gray-200 px-4 py-3">
-        <form id="messageForm" class="flex items-center">
-          <input
-            type="text"
-            id="messageInput"
-            placeholder="Type your message..."
-            class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-          <button
-            type="submit"
-            class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-            title="Send"
-          >
-            <!-- Send Icon (rotated arrow) -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 transform rotate-90"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 10l7-7m0 0l7 7m-7-7v18"
-              />
-            </svg>
-          </button>
-        </form>
-      </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Optional JavaScript to Simulate Message Sending -->
-   <!-- Example snippet from chat.html -->
-   <script>
-    // Assume window.userId is set after login; for demo purposes, we use 1.
+  <script>
+    // For demonstration, we assume window.userId is set after login; here we use 1.
     window.userId = 1;
   
-    // Function to fetch and display all messages from the backend
-    async function fetchMessages() {
+    // Key used to store/retrieve messages from localStorage.
+    const LOCAL_STORAGE_KEY = 'chatMessages';
+  
+    /**
+     * Helper function to determine if two messages are identical.
+     * We compare the userId, message text, and the numeric value of the createdAt timestamp.
+     *
+     * @param {Object} msg1 - First message object.
+     * @param {Object} msg2 - Second message object.
+     * @returns {Boolean} - True if messages are identical, false otherwise.
+     */
+    function isSameMessage(msg1, msg2) {
+      return (
+        msg1.userId === msg2.userId &&
+        msg1.message === msg2.message &&
+        new Date(msg1.createdAt).getTime() === new Date(msg2.createdAt).getTime()
+      );
+    }
+  
+    /**
+     * Renders an array of messages into the chat UI.
+     * @param {Array} messages - Array of message objects to render.
+     */
+    function renderMessages(messages) {
+      const chatMessages = document.getElementById("chatMessages");
+      chatMessages.innerHTML = ""; // Clear the chat window.
+  
+      messages.forEach((msg) => {
+        // Determine whether this message was sent by the current user.
+        const isSender = msg.userId === window.userId;
+  
+        // Create a container for the message with appropriate alignment.
+        const messageContainer = document.createElement("div");
+        messageContainer.className = isSender ? "flex items-end justify-end" : "flex items-end";
+  
+        // Create the message bubble with different styling based on the sender.
+        const messageBubble = document.createElement("div");
+        messageBubble.className = isSender
+          ? "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none"
+          : "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
+  
+        // Create an element for the message text.
+        const messagePara = document.createElement("p");
+        messagePara.textContent = msg.message;
+  
+        // Create an element for the timestamp.
+        const timestamp = document.createElement("span");
+        timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
+        timestamp.textContent = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  
+        // Assemble the elements.
+        messageBubble.appendChild(messagePara);
+        messageBubble.appendChild(timestamp);
+        messageContainer.appendChild(messageBubble);
+        chatMessages.appendChild(messageContainer);
+      });
+  
+      // Scroll to the bottom to show the latest message.
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  
+    /**
+     * Loads messages from localStorage.
+     * @returns {Array} - Array of message objects, or an empty array if none exist.
+     */
+    function loadLocalChats() {
+      const localChatsStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return localChatsStr ? JSON.parse(localChatsStr) : [];
+    }
+  
+    /**
+     * Saves an array of messages to localStorage, keeping only the most recent 10 messages.
+     * @param {Array} messages - Array of message objects to save.
+     */
+    function saveLocalChats(messages) {
+      // Only keep the last 10 messages.
+      const recentMessages = messages.slice(-10);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(recentMessages));
+    }
+  
+    /**
+     * Fetches new messages from the backend that were created after a specified timestamp.
+     * It is assumed that the backend GET /messages endpoint supports an 'after' query parameter.
+     *
+     * @param {string|null} afterTimestamp - ISO timestamp string; if provided, only messages after this time are fetched.
+     * @returns {Array} - Array of new message objects.
+     */
+    async function fetchNewMessages(afterTimestamp) {
+      let url = '/messages';
+      if (afterTimestamp) {
+        url += `?after=${encodeURIComponent(afterTimestamp)}`;
+      }
       try {
-        const response = await fetch('/messages');
+        const response = await fetch(url);
         const data = await response.json();
-        const chatMessages = document.getElementById("chatMessages");
-        
-        // Clear existing messages
-        chatMessages.innerHTML = "";
-  
-        // Loop through each message from the database and create a chat bubble
-        data.messages.forEach((msg) => {
-          const messageContainer = document.createElement("div");
-          // Determine if the message is from the sender (current user) or someone else
-          const isSender = msg.userId === window.userId;
-          messageContainer.className = isSender ? "flex items-end justify-end" : "flex items-end";
-  
-          const messageBubble = document.createElement("div");
-          messageBubble.className = isSender ?
-            "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none" :
-            "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
-  
-          const messagePara = document.createElement("p");
-          messagePara.textContent = msg.message;
-  
-          const timestamp = document.createElement("span");
-          timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
-          // Format the createdAt timestamp (assuming the API returns msg.createdAt)
-          timestamp.textContent = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  
-          messageBubble.appendChild(messagePara);
-          messageBubble.appendChild(timestamp);
-          messageContainer.appendChild(messageBubble);
-          chatMessages.appendChild(messageContainer);
+        // Normalize the createdAt value for each new message.
+        const newMessages = (data.messages || []).map(msg => {
+          msg.createdAt = new Date(msg.createdAt).toISOString();
+          return msg;
         });
-  
-        // Scroll to the bottom of the chat messages area
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return newMessages;
       } catch (error) {
-        console.error("Error fetching messages:", error);
+        console.error("Error fetching new messages:", error);
+        return [];
       }
     }
   
-    // Fetch messages when the page loads
-    window.addEventListener("load", fetchMessages);
+    /**
+     * Initializes the chat by:
+     * 1. Loading cached messages from local storage and rendering them.
+     * 2. Determining the timestamp of the latest cached message.
+     * 3. Fetching any new messages from the backend.
+     * 4. Filtering out any new messages that have the same timestamp (or earlier) as the last cached message.
+     * 5. Combining the unique messages, rendering them, and updating local storage.
+     */
+    async function initializeChat() {
+      // Step 1: Load cached messages.
+      let localMessages = loadLocalChats();
+      renderMessages(localMessages);
   
-    // Handle sending a new message
+      // Step 2: Determine the timestamp of the last cached message (if available).
+      let lastTimestamp = localMessages.length > 0 ? localMessages[localMessages.length - 1].createdAt : null;
+  
+      // Step 3: Fetch new messages from the backend.
+      const newMessages = await fetchNewMessages(lastTimestamp);
+  
+      // Step 4: Filter new messages to include only those with a strictly later timestamp.
+      let filteredNewMessages = lastTimestamp
+        ? newMessages.filter(msg => new Date(msg.createdAt).getTime() > new Date(lastTimestamp).getTime())
+        : newMessages;
+  
+      // Step 5: Combine the messages while filtering out duplicates.
+      let combinedMessages = localMessages.slice(); // Start with the cached messages.
+      filteredNewMessages.forEach((newMsg) => {
+        if (!combinedMessages.some(existingMsg => isSameMessage(existingMsg, newMsg))) {
+          combinedMessages.push(newMsg);
+        }
+      });
+  
+      // Sort messages in ascending order based on their creation time.
+      combinedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  
+      // Render the final message list and update local storage.
+      renderMessages(combinedMessages);
+      saveLocalChats(combinedMessages);
+    }
+  
+    // Initialize the chat when the window loads.
+    window.addEventListener("load", initializeChat);
+  
+    // Handle sending a new message.
     document.getElementById("messageForm").addEventListener("submit", async function (event) {
-      event.preventDefault(); // Prevent default form submission
+      event.preventDefault(); // Prevent default form submission.
   
       const messageInput = document.getElementById("messageInput");
       const messageText = messageInput.value.trim();
       if (!messageText) return;
   
-      // Clear the input field
+      // Clear the input field.
       messageInput.value = "";
   
-      // Local UI update for immediate feedback (optional)
-      const chatMessages = document.getElementById("chatMessages");
-      const messageContainer = document.createElement("div");
-      messageContainer.className = "flex items-end justify-end";
-      const messageBubble = document.createElement("div");
-      messageBubble.className = "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none";
-      const messagePara = document.createElement("p");
-      messagePara.textContent = messageText;
-      const timestamp = document.createElement("span");
-      timestamp.className = "text-xs text-blue-200 self-end";
+      // Create a new message object using the current timestamp.
       const now = new Date();
-      timestamp.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      messageBubble.appendChild(messagePara);
-      messageBubble.appendChild(timestamp);
-      messageContainer.appendChild(messageBubble);
-      chatMessages.appendChild(messageContainer);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      const newMsg = {
+        userId: window.userId,
+        message: messageText,
+        createdAt: now.toISOString() // ISO string for consistency.
+      };
   
-      // Send the message to the backend to store it in the database.
+      // Update the UI and local cache with the new message.
+      let currentMessages = loadLocalChats();
+      // Only add if not already present.
+      if (!currentMessages.some(existingMsg => isSameMessage(existingMsg, newMsg))) {
+        currentMessages.push(newMsg);
+      }
+      renderMessages(currentMessages);
+      saveLocalChats(currentMessages);
+  
+      // Send the new message to the backend.
       try {
         const response = await fetch('/messages', {
           method: 'POST',
@@ -212,15 +229,14 @@
         });
         const data = await response.json();
         console.log('Message stored:', data);
-        
-        // Optionally, refresh the entire list from the database after storing:
-        // await fetchMessages();
       } catch (error) {
         console.error('Error storing message:', error);
       }
     });
   </script>
   
-
-  </body>
+  
+  
+  
+</body>
 </html>

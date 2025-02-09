@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// POST /signup endpoint to register a new user
+// Signup endpoint
 router.post('/signup', authController.signup);
 
 // Login endpoint
