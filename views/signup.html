@@ -4,41 +4,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chat App - Signup</title>
+  <title>Signup - Chat App</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
   <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-bold text-center mb-6">Sign Up</h2>
+    <h2 class="text-2xl font-bold mb-6 text-center">Signup</h2>
     <form id="signupForm">
       <div class="mb-4">
-        <label for="name" class="block text-gray-700">Name</label>
-        <input type="text" id="name" class="w-full p-2 border rounded" required>
+        <label for="name" class="block text-gray-700">Name:</label>
+        <input type="text" id="name" name="name" placeholder="Your Name" class="w-full px-3 py-2 border rounded" required>
       </div>
       <div class="mb-4">
-        <label for="email" class="block text-gray-700">Email</label>
-        <input type="email" id="email" class="w-full p-2 border rounded" required>
+        <label for="email" class="block text-gray-700">Email:</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" class="w-full px-3 py-2 border rounded" required>
       </div>
+      <!-- New phone input -->
       <div class="mb-4">
-        <label for="phone" class="block text-gray-700">Phone</label>
-        <input type="tel" id="phone" class="w-full p-2 border rounded" required>
+        <label for="phone" class="block text-gray-700">Phone:</label>
+        <input type="text" id="phone" name="phone" placeholder="Your Phone Number" class="w-full px-3 py-2 border rounded" required>
       </div>
-      <div class="mb-4">
-        <label for="password" class="block text-gray-700">Password</label>
-        <input type="password" id="password" class="w-full p-2 border rounded" required>
+      <div class="mb-6">
+        <label for="password" class="block text-gray-700">Password:</label>
+        <input type="password" id="password" name="password" placeholder="********" class="w-full px-3 py-2 border rounded" required>
       </div>
-      <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Sign Up</button>
+      <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Signup</button>
     </form>
+    <p id="errorMsg" class="text-red-500 mt-4 text-center"></p>
     <p class="mt-4 text-center">Already have an account? <a href="/login.html" class="text-blue-500">Login</a></p>
   </div>
   <script>
     document.getElementById("signupForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const phone = document.getElementById("phone").value;
+      document.getElementById("errorMsg").textContent = "";
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim(); // Get phone value.
       const password = document.getElementById("password").value;
-
       try {
         const response = await fetch("/signup", {
           method: "POST",
@@ -46,14 +48,15 @@
           body: JSON.stringify({ name, email, phone, password })
         });
         const data = await response.json();
-        if(response.status === 201) {
-          alert("Account created successfully. Please login.");
+        if (response.ok) {
+          alert("Signup successful! Please login.");
           window.location.href = "/login.html";
         } else {
-          alert(data.message || "Error signing up.");
+          document.getElementById("errorMsg").textContent = data.message || "Signup failed.";
         }
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Signup error:", error);
+        document.getElementById("errorMsg").textContent = "An error occurred. Please try again later.";
       }
     });
   </script>

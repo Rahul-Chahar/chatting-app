@@ -1,19 +1,19 @@
-<!-- views/chat.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chat App - Chat Room</title>
+  <title>Group Chat - ChatApp</title>
+  <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Socket.io client library -->
+  <!-- Socket.io Client Library -->
   <script src="https://cdn.socket.io/4.5.1/socket.io.min.js" integrity="sha384-y5dp9pns3uPySeGLr/2iS5S7DQTzIrtC3c6/5LroL6Ey7H+6SakFbF+Pq2NUTNEE" crossorigin="anonymous"></script>
 </head>
 <body class="bg-gray-100">
   <!-- Navigation Bar -->
   <nav class="bg-white shadow px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center">
-      <span class="text-xl font-bold text-gray-800">ChatApp</span>
+    <div>
+      <span class="text-xl font-bold text-gray-800">Group Chat</span>
     </div>
     <div>
       <button id="logoutBtn" class="text-gray-600 hover:text-gray-800">Logout</button>
@@ -31,7 +31,7 @@
         <button type="submit" class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" title="Send">
           <!-- Send Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
           </svg>
         </button>
       </form>
@@ -39,204 +39,124 @@
   </div>
 
   <script>
-    // For demonstration, we assume window.userId is set after login; here we use 1.
-    window.userId = 1;
-  
-    // Key used to store/retrieve messages from localStorage.
-    const LOCAL_STORAGE_KEY = 'chatMessages';
-  
+    // Retrieve session data from localStorage.
+    window.userId = parseInt(localStorage.getItem("userId"), 10) || 1;
+    window.groupId = parseInt(localStorage.getItem("groupId"), 10) || 1;
+    const token = localStorage.getItem("token");
+    const LOCAL_STORAGE_KEY = `groupMessages_${window.groupId}`;
+
+    // Initialize Socket.io client.
+    const socket = io();
+
+    // Join the group room.
+    socket.emit("joinGroup", window.groupId);
+    console.log("Joined group:", window.groupId);
+
     /**
-     * Helper function to determine if two messages are identical.
-     * We compare the userId, message text, and the numeric value of the createdAt timestamp.
-     *
-     * @param {Object} msg1 - First message object.
-     * @param {Object} msg2 - Second message object.
-     * @returns {Boolean} - True if messages are identical, false otherwise.
-     */
-    function isSameMessage(msg1, msg2) {
-      return (
-        msg1.userId === msg2.userId &&
-        msg1.message === msg2.message &&
-        new Date(msg1.createdAt).getTime() === new Date(msg2.createdAt).getTime()
-      );
-    }
-  
-    /**
-     * Renders an array of messages into the chat UI.
-     * @param {Array} messages - Array of message objects to render.
+     * Renders group messages.
+     * Messages sent by the logged-in user (window.userId) are right-aligned;
+     * others are left-aligned.
      */
     function renderMessages(messages) {
       const chatMessages = document.getElementById("chatMessages");
-      chatMessages.innerHTML = ""; // Clear the chat window.
-  
-      messages.forEach((msg) => {
-        // Determine whether this message was sent by the current user.
-        const isSender = msg.userId === window.userId;
-  
-        // Create a container for the message with appropriate alignment.
-        const messageContainer = document.createElement("div");
-        messageContainer.className = isSender ? "flex items-end justify-end" : "flex items-end";
-  
-        // Create the message bubble with different styling based on the sender.
-        const messageBubble = document.createElement("div");
-        messageBubble.className = isSender
-          ? "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none"
-          : "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
-  
-        // Create an element for the message text.
-        const messagePara = document.createElement("p");
-        messagePara.textContent = msg.message;
-  
-        // Create an element for the timestamp.
+      chatMessages.innerHTML = "";
+      messages.forEach(msg => {
+        const isSender = msg.senderId === window.userId;
+        const container = document.createElement("div");
+        container.className = isSender ? "flex items-end justify-end" : "flex items-end";
+        const bubble = document.createElement("div");
+        bubble.className = isSender ?
+          "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none" :
+          "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
+        const text = document.createElement("p");
+        text.textContent = msg.message;
         const timestamp = document.createElement("span");
         timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
         timestamp.textContent = new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  
-        // Assemble the elements.
-        messageBubble.appendChild(messagePara);
-        messageBubble.appendChild(timestamp);
-        messageContainer.appendChild(messageBubble);
-        chatMessages.appendChild(messageContainer);
+        bubble.appendChild(text);
+        bubble.appendChild(timestamp);
+        container.appendChild(bubble);
+        chatMessages.appendChild(container);
       });
-  
-      // Scroll to the bottom to show the latest message.
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-  
+
     /**
-     * Loads messages from localStorage.
-     * @returns {Array} - Array of message objects, or an empty array if none exist.
+     * Loads group messages from the backend.
      */
-    function loadLocalChats() {
-      const localChatsStr = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return localChatsStr ? JSON.parse(localChatsStr) : [];
-    }
-  
-    /**
-     * Saves an array of messages to localStorage, keeping only the most recent 10 messages.
-     * @param {Array} messages - Array of message objects to save.
-     */
-    function saveLocalChats(messages) {
-      // Only keep the last 10 messages.
-      const recentMessages = messages.slice(-10);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(recentMessages));
-    }
-  
-    /**
-     * Fetches new messages from the backend that were created after a specified timestamp.
-     * It is assumed that the backend GET /messages endpoint supports an 'after' query parameter.
-     *
-     * @param {string|null} afterTimestamp - ISO timestamp string; if provided, only messages after this time are fetched.
-     * @returns {Array} - Array of new message objects.
-     */
-    async function fetchNewMessages(afterTimestamp) {
-      let url = '/messages';
-      if (afterTimestamp) {
-        url += `?after=${encodeURIComponent(afterTimestamp)}`;
-      }
+    async function loadGroupMessages() {
       try {
-        const response = await fetch(url);
+        const response = await fetch(`/groupMessages?groupId=${window.groupId}`);
         const data = await response.json();
-        // Normalize the createdAt value for each new message.
-        const newMessages = (data.messages || []).map(msg => {
+        const messages = (data.messages || []).map(msg => {
           msg.createdAt = new Date(msg.createdAt).toISOString();
           return msg;
         });
-        return newMessages;
-      } catch (error) {
-        console.error("Error fetching new messages:", error);
-        return [];
+        console.log("Loaded messages:", messages);
+        renderMessages(messages);
+        // Cache messages in localStorage.
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
+      } catch (err) {
+        console.error("Error loading group messages:", err);
       }
     }
-  
-    /**
-     * Initializes the chat by:
-     * 1. Loading cached messages from local storage and rendering them.
-     * 2. Determining the timestamp of the latest cached message.
-     * 3. Fetching any new messages from the backend.
-     * 4. Filtering out any new messages that have the same timestamp (or earlier) as the last cached message.
-     * 5. Combining the unique messages, rendering them, and updating local storage.
-     */
-    async function initializeChat() {
-      // Step 1: Load cached messages.
-      let localMessages = loadLocalChats();
-      renderMessages(localMessages);
-  
-      // Step 2: Determine the timestamp of the last cached message (if available).
-      let lastTimestamp = localMessages.length > 0 ? localMessages[localMessages.length - 1].createdAt : null;
-  
-      // Step 3: Fetch new messages from the backend.
-      const newMessages = await fetchNewMessages(lastTimestamp);
-  
-      // Step 4: Filter new messages to include only those with a strictly later timestamp.
-      let filteredNewMessages = lastTimestamp
-        ? newMessages.filter(msg => new Date(msg.createdAt).getTime() > new Date(lastTimestamp).getTime())
-        : newMessages;
-  
-      // Step 5: Combine the messages while filtering out duplicates.
-      let combinedMessages = localMessages.slice(); // Start with the cached messages.
-      filteredNewMessages.forEach((newMsg) => {
-        if (!combinedMessages.some(existingMsg => isSameMessage(existingMsg, newMsg))) {
-          combinedMessages.push(newMsg);
-        }
-      });
-  
-      // Sort messages in ascending order based on their creation time.
-      combinedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  
-      // Render the final message list and update local storage.
-      renderMessages(combinedMessages);
-      saveLocalChats(combinedMessages);
-    }
-  
-    // Initialize the chat when the window loads.
-    window.addEventListener("load", initializeChat);
-  
-    // Handle sending a new message.
-    document.getElementById("messageForm").addEventListener("submit", async function (event) {
-      event.preventDefault(); // Prevent default form submission.
-  
+
+    // Listen for new messages via Socket.io.
+    socket.on("newGroupMessage", (message) => {
+      console.log("Received new group message via Socket.io:", message);
+      // Append the new message to the UI.
+      const chatMessages = document.getElementById("chatMessages");
+      const isSender = message.senderId === window.userId;
+      const container = document.createElement("div");
+      container.className = isSender ? "flex items-end justify-end" : "flex items-end";
+      const bubble = document.createElement("div");
+      bubble.className = isSender ?
+        "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none" :
+        "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
+      const text = document.createElement("p");
+      text.textContent = message.message;
+      const timestamp = document.createElement("span");
+      timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
+      timestamp.textContent = new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      bubble.appendChild(text);
+      bubble.appendChild(timestamp);
+      container.appendChild(bubble);
+      document.getElementById("chatMessages").appendChild(container);
+      document.getElementById("chatMessages").scrollTop = document.getElementById("chatMessages").scrollHeight;
+      
+      // Optionally, update localStorage.
+      const cached = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+      cached.push(message);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
+    });
+
+    // Load group messages when the page loads.
+    window.addEventListener("load", loadGroupMessages);
+
+    // Handle sending a new group message.
+    document.getElementById("messageForm").addEventListener("submit", (e) => {
+      e.preventDefault();
       const messageInput = document.getElementById("messageInput");
       const messageText = messageInput.value.trim();
       if (!messageText) return;
-  
-      // Clear the input field.
       messageInput.value = "";
-  
-      // Create a new message object using the current timestamp.
       const now = new Date();
       const newMsg = {
-        userId: window.userId,
+        senderId: window.userId,
+        groupId: window.groupId,
         message: messageText,
-        createdAt: now.toISOString() // ISO string for consistency.
+        createdAt: now.toISOString()
       };
-  
-      // Update the UI and local cache with the new message.
-      let currentMessages = loadLocalChats();
-      // Only add if not already present.
-      if (!currentMessages.some(existingMsg => isSameMessage(existingMsg, newMsg))) {
-        currentMessages.push(newMsg);
-      }
-      renderMessages(currentMessages);
-      saveLocalChats(currentMessages);
-  
-      // Send the new message to the backend.
-      try {
-        const response = await fetch('/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: window.userId, message: messageText })
-        });
-        const data = await response.json();
-        console.log('Message stored:', data);
-      } catch (error) {
-        console.error('Error storing message:', error);
-      }
+      console.log("Sending group message:", newMsg);
+      socket.emit("sendGroupMessage", newMsg);
+    });
+
+    // Handle logout.
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      console.log("Logout initiated.");
+      localStorage.clear();
+      window.location.href = "/login.html";
     });
   </script>
-  
-  
-  
-  
 </body>
 </html>

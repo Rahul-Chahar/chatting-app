@@ -1,6 +1,11 @@
 // models/User.js
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -11,11 +16,12 @@ module.exports = (sequelize, DataTypes) => {
       unique: true,
       validate: { isEmail: true },
     },
-    phone: {
+    password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    password: {
+    // Make phone required.
+    phone: {
       type: DataTypes.STRING,
       allowNull: false,
     },

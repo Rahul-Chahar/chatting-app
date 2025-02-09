@@ -2,11 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const messageController = require('../controllers/messageController');
+const authMiddleware = require('../middleware/auth');
 
-// POST endpoint to store a new chat message
-router.post('/messages', messageController.sendMessage);
-
-// GET endpoint to retrieve all messages
-router.get('/messages', messageController.getAllMessages);
+// Send a message (POST) and get conversation (GET)
+router.post('/messages', authMiddleware, messageController.sendMessage);
+router.get('/messages', authMiddleware, messageController.getMessages);
 
 module.exports = router;

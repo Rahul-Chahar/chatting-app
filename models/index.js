@@ -2,7 +2,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
 
-// Initialize Sequelize using credentials from .env
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -16,18 +15,11 @@ const sequelize = new Sequelize(
 );
 
 const db = {};
-
-// Attach Sequelize and instance
-db.Sequelize = Sequelize;
 db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 
-// Import models
+// Load models
 db.User = require('./User')(sequelize, DataTypes);
-db.Message = require('./Message')(sequelize, DataTypes);
-
-// Define associations
-// Each message belongs to one user and each user can have many messages.
-db.Message.belongsTo(db.User, { foreignKey: 'userId' });
-db.User.hasMany(db.Message, { foreignKey: 'userId' });
+db.GroupMessage = require('./GroupMessage')(sequelize, DataTypes);
 
 module.exports = db;
