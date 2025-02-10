@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     }
   }, {
-    timestamps: true,
+    timestamps: true, // createdAt and updatedAt will be added
   });
   return GroupMessage;
 };

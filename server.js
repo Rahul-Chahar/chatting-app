@@ -113,7 +113,7 @@ app.post('/groupMessages', async (req, res) => {
   }
 });
 
-// In your server.js or a separate groups.js route file
+// Create Group Endpoint (server.js)
 app.post('/groups', async (req, res) => {
   const { name, createdBy } = req.body;
   if (!name || !createdBy) {
@@ -121,7 +121,7 @@ app.post('/groups', async (req, res) => {
   }
   try {
     const group = await db.Group.create({ name, createdBy });
-    // Automatically add the creator to the group members.
+    // Add the creator as an admin in the group.
     await db.GroupMember.create({ userId: createdBy, groupId: group.id, role: 'admin' });
     res.status(201).json({ message: 'Group created successfully.', group });
   } catch (err) {
@@ -129,6 +129,7 @@ app.post('/groups', async (req, res) => {
     res.status(500).json({ message: 'Server error creating group.' });
   }
 });
+
 
 app.post('/groups/:groupId/members', async (req, res) => {
   const groupId = req.params.groupId;
@@ -172,9 +173,34 @@ app.get('/groups', async (req, res) => {
   }
 });
 
+// In your server.js (or a router file)
+app.get('/groups/:groupId/members', async (req, res) => {
+  const groupId = req.params.groupId;
+  if (!groupId) {
+    return res.status(400).json({ message: 'Group ID is required.' });
+  }
+  try {
+    const members = await db.GroupMember.findAll({
+      where: { groupId },
+      include: [{
+        model: db.User,
+        attributes: ['id', 'name', 'email', 'phone']
+      }]
+    });
+    res.status(200).json({ members });
+  } catch (err) {
+    console.error("Error fetching group members:", err);
+    res.status(500).json({ message: 'Server error fetching group members.' });
+  }
+});
+
+
+// GET /groups/:groupId/messages
 app.get('/groups/:groupId/messages', async (req, res) => {
   const groupId = req.params.groupId;
-  // Optionally, add query parameters for pagination or incremental fetching.
+  if (!groupId) {
+    return res.status(400).json({ message: 'Group ID is required.' });
+  }
   try {
     const messages = await db.GroupMessage.findAll({
       where: { groupId },
@@ -212,21 +238,18 @@ app.post('/groups/:groupId/invite', async (req, res) => {
   if (!email) {
     return res.status(400).json({ message: 'Email is required for invitation.' });
   }
-  
   try {
-    // Find the user by email.
+    // Look up the user by email.
     const user = await db.User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).json({ message: 'User with this email not found.' });
     }
-    
-    // Check if the user is already a member of the group.
+    // Check if the user is already a member.
     const existingMember = await db.GroupMember.findOne({ where: { groupId, userId: user.id } });
     if (existingMember) {
       return res.status(409).json({ message: 'User is already a member of the group.' });
     }
-    
-    // Add the user to the group as a member.
+    // Add the user to the group.
     const member = await db.GroupMember.create({ groupId, userId: user.id, role: 'member' });
     console.log("User invited successfully:", member.toJSON());
     return res.status(201).json({ message: 'User invited successfully.', member });
@@ -235,6 +258,32 @@ app.post('/groups/:groupId/invite', async (req, res) => {
     return res.status(500).json({ message: 'Server error inviting user.' });
   }
 });
+
+
+// Promote a member to admin.
+// PUT /groups/:groupId/members/:userId/promote
+app.put('/groups/:groupId/members/:userId/promote', async (req, res) => {
+  const groupId = req.params.groupId;
+  const memberId = req.params.userId;
+  
+  try {
+    // Check if the user is a member of the group.
+    const groupMember = await db.GroupMember.findOne({ where: { groupId, userId: memberId } });
+    if (!groupMember) {
+      return res.status(404).json({ message: 'User is not a member of the group.' });
+    }
+    
+    // Update role to 'admin'.
+    groupMember.role = 'admin';
+    await groupMember.save();
+    
+    res.status(200).json({ message: 'Member promoted to admin successfully.' });
+  } catch (error) {
+    console.error("Error promoting member:", error);
+    res.status(500).json({ message: 'Server error promoting member.' });
+  }
+});
+
 
 
 
