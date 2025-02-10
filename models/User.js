@@ -20,11 +20,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    // Make phone required.
     phone: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
+    }
   });
   return User;
 };

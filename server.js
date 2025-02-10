@@ -113,6 +113,132 @@ app.post('/groupMessages', async (req, res) => {
   }
 });
 
+// In your server.js or a separate groups.js route file
+app.post('/groups', async (req, res) => {
+  const { name, createdBy } = req.body;
+  if (!name || !createdBy) {
+    return res.status(400).json({ message: 'Group name and createdBy are required.' });
+  }
+  try {
+    const group = await db.Group.create({ name, createdBy });
+    // Automatically add the creator to the group members.
+    await db.GroupMember.create({ userId: createdBy, groupId: group.id, role: 'admin' });
+    res.status(201).json({ message: 'Group created successfully.', group });
+  } catch (err) {
+    console.error("Error creating group:", err);
+    res.status(500).json({ message: 'Server error creating group.' });
+  }
+});
+
+app.post('/groups/:groupId/members', async (req, res) => {
+  const groupId = req.params.groupId;
+  const { userId } = req.body; // The user to be added/invited.
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required to join the group.' });
+  }
+  try {
+    // Check if the user is already a member.
+    const existing = await db.GroupMember.findOne({ where: { groupId, userId } });
+    if (existing) {
+      return res.status(409).json({ message: 'User is already a member of the group.' });
+    }
+    const member = await db.GroupMember.create({ groupId, userId, role: 'member' });
+    res.status(201).json({ message: 'User added to group successfully.', member });
+  } catch (err) {
+    console.error("Error adding member:", err);
+    res.status(500).json({ message: 'Server error adding member.' });
+  }
+});
+
+app.get('/groups', async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required.' });
+  }
+  try {
+    // Get groups where the user is a member.
+    const groups = await db.Group.findAll({
+      include: [{
+        model: db.User,
+        where: { id: userId },
+        through: { attributes: [] } // Don't include join table attributes
+      }],
+      attributes: ['id', 'name']
+    });
+    res.status(200).json({ groups });
+  } catch (err) {
+    console.error("Error fetching groups:", err);
+    res.status(500).json({ message: 'Server error retrieving groups.' });
+  }
+});
+
+app.get('/groups/:groupId/messages', async (req, res) => {
+  const groupId = req.params.groupId;
+  // Optionally, add query parameters for pagination or incremental fetching.
+  try {
+    const messages = await db.GroupMessage.findAll({
+      where: { groupId },
+      order: [['createdAt', 'ASC']],
+      attributes: ['id', 'senderId', 'message', 'createdAt']  // Lightweight response.
+    });
+    res.status(200).json({ messages });
+  } catch (err) {
+    console.error("Error fetching group messages:", err);
+    res.status(500).json({ message: 'Server error retrieving messages.' });
+  }
+});
+
+app.post('/groups/:groupId/messages', async (req, res) => {
+  const groupId = req.params.groupId;
+  const { senderId, message } = req.body;
+  if (!senderId || !message) {
+    return res.status(400).json({ message: 'Sender ID and message are required.' });
+  }
+  try {
+    const newMessage = await db.GroupMessage.create({ groupId, senderId, message });
+    res.status(201).json({ message: 'Message stored successfully.', data: newMessage });
+  } catch (err) {
+    console.error("Error storing group message:", err);
+    res.status(500).json({ message: 'Server error storing message.' });
+  }
+});
+
+// Invite a user to a group by email.
+// POST /groups/:groupId/invite
+app.post('/groups/:groupId/invite', async (req, res) => {
+  const groupId = req.params.groupId;
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required for invitation.' });
+  }
+  
+  try {
+    // Find the user by email.
+    const user = await db.User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'User with this email not found.' });
+    }
+    
+    // Check if the user is already a member of the group.
+    const existingMember = await db.GroupMember.findOne({ where: { groupId, userId: user.id } });
+    if (existingMember) {
+      return res.status(409).json({ message: 'User is already a member of the group.' });
+    }
+    
+    // Add the user to the group as a member.
+    const member = await db.GroupMember.create({ groupId, userId: user.id, role: 'member' });
+    console.log("User invited successfully:", member.toJSON());
+    return res.status(201).json({ message: 'User invited successfully.', member });
+  } catch (error) {
+    console.error("Error inviting user:", error);
+    return res.status(500).json({ message: 'Server error inviting user.' });
+  }
+});
+
+
+
+
 /* ============================
    SOCKET.IO REAL-TIME MESSAGING
 ============================ */
