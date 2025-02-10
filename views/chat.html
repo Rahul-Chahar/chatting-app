@@ -6,8 +6,8 @@
   <title>Group Chat - ChatApp</title>
   <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Socket.io Client Library -->
-  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js" integrity="sha384-y5dp9pns3uPySeGLr/2iS5S7DQTzIrtC3c6/5LroL6Ey7H+6SakFbF+Pq2NUTNEE" crossorigin="anonymous"></script>
+  <!-- Socket.io Client Library (integrity attribute removed) -->
+  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js" crossorigin="anonymous"></script>
 </head>
 <body class="bg-gray-100">
   <!-- Navigation Bar -->
@@ -23,12 +23,14 @@
   <!-- Chat Container -->
   <div class="max-w-3xl mx-auto my-6 bg-white shadow rounded-lg flex flex-col h-[80vh]">
     <!-- Message List -->
-    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4"></div>
+    <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4">
+      <!-- Messages will appear here -->
+    </div>
     <!-- Message Input Area -->
     <div class="border-t border-gray-200 px-4 py-3">
       <form id="messageForm" class="flex items-center">
         <input type="text" id="messageInput" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required>
-        <button type="submit" class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400" title="Send">
+        <button type="submit" class="ml-4 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full" title="Send">
           <!-- Send Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
@@ -39,29 +41,28 @@
   </div>
 
   <script>
-    // Retrieve session data from localStorage.
-    window.userId = parseInt(localStorage.getItem("userId"), 10) || 1;
-    window.groupId = parseInt(localStorage.getItem("groupId"), 10) || 1;
+    // --- Session Check ---
+    if (!localStorage.getItem("token") || !localStorage.getItem("userId")) {
+      console.error("Missing token or userId; redirecting to login.");
+      window.location.href = "/login.html";
+    }
+    const userId = parseInt(localStorage.getItem("userId"), 10);
+    const groupId = parseInt(localStorage.getItem("groupId"), 10) || 1; // Default groupId = 1
     const token = localStorage.getItem("token");
-    const LOCAL_STORAGE_KEY = `groupMessages_${window.groupId}`;
+    const LOCAL_STORAGE_KEY = "groupMessages_" + groupId;
+    console.log("Session info:", { userId, groupId, token });
 
-    // Initialize Socket.io client.
+    // --- Socket.io Setup ---
     const socket = io();
+    socket.emit("joinGroup", groupId);
+    console.log("Joined group room:", groupId);
 
-    // Join the group room.
-    socket.emit("joinGroup", window.groupId);
-    console.log("Joined group:", window.groupId);
-
-    /**
-     * Renders group messages.
-     * Messages sent by the logged-in user (window.userId) are right-aligned;
-     * others are left-aligned.
-     */
+    // --- Function: Render Messages ---
     function renderMessages(messages) {
       const chatMessages = document.getElementById("chatMessages");
       chatMessages.innerHTML = "";
       messages.forEach(msg => {
-        const isSender = msg.senderId === window.userId;
+        const isSender = msg.senderId === userId;
         const container = document.createElement("div");
         container.className = isSender ? "flex items-end justify-end" : "flex items-end";
         const bubble = document.createElement("div");
@@ -81,59 +82,41 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    /**
-     * Loads group messages from the backend.
-     */
+    // --- Function: Load Group Messages ---
     async function loadGroupMessages() {
       try {
-        const response = await fetch(`/groupMessages?groupId=${window.groupId}`);
+        const response = await fetch(`/groupMessages?groupId=${groupId}`);
+        if (!response.ok) {
+          console.error("Failed to fetch messages, status:", response.status);
+          return;
+        }
         const data = await response.json();
+        console.log("Fetched group messages:", data);
         const messages = (data.messages || []).map(msg => {
           msg.createdAt = new Date(msg.createdAt).toISOString();
           return msg;
         });
-        console.log("Loaded messages:", messages);
         renderMessages(messages);
-        // Cache messages in localStorage.
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
       } catch (err) {
         console.error("Error loading group messages:", err);
       }
     }
 
-    // Listen for new messages via Socket.io.
+    // --- Socket.io: Listen for New Messages ---
     socket.on("newGroupMessage", (message) => {
       console.log("Received new group message via Socket.io:", message);
-      // Append the new message to the UI.
-      const chatMessages = document.getElementById("chatMessages");
-      const isSender = message.senderId === window.userId;
-      const container = document.createElement("div");
-      container.className = isSender ? "flex items-end justify-end" : "flex items-end";
-      const bubble = document.createElement("div");
-      bubble.className = isSender ?
-        "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-blue-500 text-white rounded-lg rounded-br-none" :
-        "flex flex-col space-y-1 max-w-xs px-4 py-2 bg-gray-200 text-gray-800 rounded-lg rounded-bl-none";
-      const text = document.createElement("p");
-      text.textContent = message.message;
-      const timestamp = document.createElement("span");
-      timestamp.className = "text-xs " + (isSender ? "text-blue-200 self-end" : "text-gray-500 self-end");
-      timestamp.textContent = new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      bubble.appendChild(text);
-      bubble.appendChild(timestamp);
-      container.appendChild(bubble);
-      document.getElementById("chatMessages").appendChild(container);
-      document.getElementById("chatMessages").scrollTop = document.getElementById("chatMessages").scrollHeight;
-      
-      // Optionally, update localStorage.
-      const cached = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
-      cached.push(message);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
+      let cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+      let messages = cached ? JSON.parse(cached) : [];
+      messages.push(message);
+      renderMessages(messages);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
     });
 
-    // Load group messages when the page loads.
+    // --- Load Messages on Page Load ---
     window.addEventListener("load", loadGroupMessages);
 
-    // Handle sending a new group message.
+    // --- Send a New Message ---
     document.getElementById("messageForm").addEventListener("submit", (e) => {
       e.preventDefault();
       const messageInput = document.getElementById("messageInput");
@@ -142,19 +125,24 @@
       messageInput.value = "";
       const now = new Date();
       const newMsg = {
-        senderId: window.userId,
-        groupId: window.groupId,
+        senderId: userId,
+        groupId: groupId,
         message: messageText,
         createdAt: now.toISOString()
       };
-      console.log("Sending group message:", newMsg);
+      console.log("Sending message via Socket.io:", newMsg);
       socket.emit("sendGroupMessage", newMsg);
     });
 
-    // Handle logout.
+    // --- Logout Functionality ---
     document.getElementById("logoutBtn").addEventListener("click", () => {
-      console.log("Logout initiated.");
-      localStorage.clear();
+      console.log("Logout button clicked.");
+      // Clear session data.
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("groupId");
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      // Redirect to login page.
       window.location.href = "/login.html";
     });
   </script>
