@@ -29,13 +29,19 @@
       document.getElementById("errorMsg").textContent = "";
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      
       try {
-        const response = await fetch("/login", {
+        // Updated URL to reflect the MVC structure:
+        const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password })
         });
+        
+        console.log("Response status:", response.status);
         const data = await response.json();
+        console.log("Response data:", data);
+        
         if (response.ok) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.userId);
@@ -43,13 +49,14 @@
           localStorage.setItem("groupId", "1");
           window.location.href = "/chat.html";
         } else {
-          document.getElementById("errorMsg").textContent = data.message || "Login failed.";
+          document.getElementById("errorMsg").textContent = data.message || "Login failed. Please try again.";
         }
-      } catch (error) {
-        console.error("Login error:", error);
+      } catch (err) {
+        console.error("Login error:", err);
         document.getElementById("errorMsg").textContent = "An error occurred. Please try again later.";
       }
     });
   </script>
+  
 </body>
 </html>

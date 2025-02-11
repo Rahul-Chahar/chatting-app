@@ -1,47 +1,41 @@
 // controllers/messageController.js
 const db = require('../models');
-const { Op } = require('sequelize');
-const Message = db.Message;
 
-// POST /messages: Send a message
-exports.sendMessage = async (req, res) => {
+// controllers/messageController.js - Updated getGroupMessages
+exports.getGroupMessages = async (req, res) => {
+  const groupId = req.params.groupId;
+  if (!groupId) {
+    return res.status(400).json({ message: 'Group ID is required.' });
+  }
   try {
-    // Use req.user.id (set by auth middleware) as senderId
-    const senderId = req.user.id;
-    const { receiverId, message } = req.body;
-    if (!receiverId || !message) {
-      return res.status(400).json({ message: 'Receiver ID and message are required.' });
-    }
-    // Create and save the message
-    const newMessage = await Message.create({ senderId, receiverId, message });
-    return res.status(201).json({ message: 'Message stored successfully.', data: newMessage });
-  } catch (error) {
-    console.error('Error storing message:', error);
-    return res.status(500).json({ message: 'Server error.' });
+    const messages = await db.GroupMessage.findAll({
+      where: { groupId },
+      include: [{
+        model: db.User,
+        attributes: ['id', 'name']
+      }],
+      order: [['createdAt', 'ASC']],
+      attributes: ['id', 'message', 'createdAt']
+    });
+    return res.status(200).json({ messages });
+  } catch (err) {
+    console.error("Error fetching group messages:", err);
+    return res.status(500).json({ message: 'Server error retrieving messages.' });
   }
 };
 
-// GET /messages?partnerId=...
-exports.getMessages = async (req, res) => {
+exports.sendGroupMessage = async (req, res) => {
+  const groupId = req.params.groupId;
+  const { senderId, message } = req.body;
+  if (!senderId || !message) {
+    return res.status(400).json({ message: 'Sender ID and message are required.' });
+  }
   try {
-    const userId = req.user.id;
-    const partnerId = parseInt(req.query.partnerId, 10);
-    if (!partnerId) {
-      return res.status(400).json({ message: 'Partner ID is required.' });
-    }
-    // Retrieve messages where the conversation is between the logged-in user and the partner.
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { senderId: userId, receiverId: partnerId },
-          { senderId: partnerId, receiverId: userId }
-        ]
-      },
-      order: [['createdAt', 'ASC']]
-    });
-    return res.status(200).json({ messages });
-  } catch (error) {
-    console.error('Error retrieving messages:', error);
-    return res.status(500).json({ message: 'Server error retrieving messages.' });
+    const newMessage = await db.GroupMessage.create({ groupId, senderId, message });
+    // You can emit the message via Socket.io from the socket controller instead.
+    return res.status(201).json({ message: 'Message stored successfully.', data: newMessage });
+  } catch (err) {
+    console.error("Error storing group message:", err);
+    return res.status(500).json({ message: 'Server error storing message.' });
   }
 };

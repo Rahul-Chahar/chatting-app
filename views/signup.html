@@ -42,7 +42,7 @@
       const phone = document.getElementById("phone").value.trim(); // Get phone value.
       const password = document.getElementById("password").value;
       try {
-        const response = await fetch("/signup", {
+        const response = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, phone, password })

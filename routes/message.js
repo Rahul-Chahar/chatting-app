@@ -2,10 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const messageController = require('../controllers/messageController');
-const authMiddleware = require('../middleware/auth');
+const authenticate = require('../middleware/auth');
 
-// Send a message (POST) and get conversation (GET)
-router.post('/messages', authMiddleware, messageController.sendMessage);
-router.get('/messages', authMiddleware, messageController.getMessages);
+router.get('/:groupId/messages', authenticate, messageController.getGroupMessages);
+router.post('/:groupId/messages', authenticate, messageController.sendGroupMessage);
 
 module.exports = router;
