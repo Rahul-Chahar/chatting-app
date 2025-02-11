@@ -2,6 +2,7 @@
 const db = require('../models');
 
 // controllers/messageController.js - Updated getGroupMessages
+// controllers/messageController.js
 exports.getGroupMessages = async (req, res) => {
   const groupId = req.params.groupId;
   if (!groupId) {
@@ -15,15 +16,15 @@ exports.getGroupMessages = async (req, res) => {
         attributes: ['id', 'name']
       }],
       order: [['createdAt', 'ASC']],
-      attributes: ['id', 'message', 'createdAt']
+      attributes: ['id', 'senderId', 'message', 'createdAt']
     });
+
     return res.status(200).json({ messages });
   } catch (err) {
     console.error("Error fetching group messages:", err);
     return res.status(500).json({ message: 'Server error retrieving messages.' });
   }
 };
-
 exports.sendGroupMessage = async (req, res) => {
   const groupId = req.params.groupId;
   const { senderId, message } = req.body;

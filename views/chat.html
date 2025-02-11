@@ -227,11 +227,12 @@ function formatMessageTime(timestamp) {
   });
   
   socket.on("newGroupMessage", (message) => {
-    if (currentGroupId && message.groupId === currentGroupId) {
-      loadGroupMessages(currentGroupId);
-    }
-  });
-  
+  console.log("Received new message:", message);
+  if (currentGroupId && message.groupId === currentGroupId) {
+    // Reload all messages to ensure proper ordering and structure
+    loadGroupMessages(currentGroupId);
+  }
+});
   // Track groups the user is removed from
   let removedGroups = new Set();
 
@@ -365,34 +366,50 @@ function formatMessageTime(timestamp) {
   // Render Messages
   function renderMessages(messages) {
   const chatMessages = document.getElementById("chatMessages");
+  const currentUserId = parseInt(localStorage.getItem("userId"), 10);
+
+  // Debug log to check IDs
+  console.log("Current User ID:", currentUserId);
+  
   chatMessages.innerHTML = "";
   
   messages.forEach(msg => {
-    const isCurrentUser = msg.senderId === userId;
+    // Ensure proper type comparison by converting both to numbers
+    const senderId = parseInt(msg.senderId, 10);
+    
+    // Debug log to check message details
+    console.log("Message:", {
+      senderId: senderId,
+      currentUserId: currentUserId,
+      isCurrentUser: senderId === currentUserId,
+      messageText: msg.message
+    });
+
+    const isCurrentUser = senderId === currentUserId;
     
     // Message container
     const container = document.createElement("div");
-    container.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4 px-2`;
+    container.className = isCurrentUser 
+      ? "flex justify-end mb-4 px-2" 
+      : "flex justify-start mb-4 px-2";
     
-    // Message content wrapper
+    // Message wrapper
     const wrapper = document.createElement("div");
-    wrapper.className = `max-w-[70%] break-words ${isCurrentUser ? 'items-end' : 'items-start'}`;
+    wrapper.className = `max-w-[70%] break-words`;
     
-    // Sender name (for received messages)
+    // Sender name for received messages
     if (!isCurrentUser && msg.User) {
       const senderName = document.createElement("div");
       senderName.className = "text-xs text-gray-600 ml-2 mb-1";
-      senderName.textContent = msg.User.name;
+      senderName.textContent = msg.User.name || 'Unknown User';
       wrapper.appendChild(senderName);
     }
     
     // Message bubble
     const bubble = document.createElement("div");
-    bubble.className = `rounded-lg px-4 py-2 ${
-      isCurrentUser
-        ? 'bg-blue-500 text-white rounded-br-none'
-        : 'bg-gray-200 text-gray-800 rounded-bl-none'
-    }`;
+    bubble.className = isCurrentUser
+      ? "rounded-lg px-4 py-2 bg-blue-500 text-white rounded-br-none"
+      : "rounded-lg px-4 py-2 bg-gray-200 text-gray-800 rounded-bl-none";
     
     // Message text
     const messageText = document.createElement("div");
@@ -402,7 +419,9 @@ function formatMessageTime(timestamp) {
     
     // Timestamp
     const timestamp = document.createElement("div");
-    timestamp.className = `text-xs ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'}`;
+    timestamp.className = isCurrentUser 
+      ? "text-xs text-blue-100" 
+      : "text-xs text-gray-500";
     timestamp.textContent = formatMessageTime(msg.createdAt);
     bubble.appendChild(timestamp);
     
@@ -411,7 +430,7 @@ function formatMessageTime(timestamp) {
     chatMessages.appendChild(container);
   });
   
-  // Scroll to the bottom of the chat
+  // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -544,54 +563,97 @@ function formatMessageTime(timestamp) {
 
   // Message Form Handler
   document.getElementById("messageForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    if (!currentGroupId) {
-      alert("Please select a group first.");
-      return;
-    }
+  e.preventDefault();
+  
+  if (!currentGroupId) {
+    alert("Please select a group first.");
+    return;
+  }
 
-    // Check if user has been removed from this group
-    if (removedGroups.has(currentGroupId)) {
-      alert("You are no longer a member of this group.");
-      resetCurrentGroup();
-      return;
-    }
-    
-    const input = document.getElementById("messageInput");
-    const text = input.value.trim();
-    
-    if (!text) return;
+  // Check if user has been removed from this group
+  if (removedGroups.has(currentGroupId)) {
+    alert("You are no longer a member of this group.");
+    resetCurrentGroup();
+    return;
+  }
+  
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  
+  if (!text) return;
 
-    // Verify group membership before sending
-    try {
-      const response = await fetch(`/api/groupMembers/${currentGroupId}/verify-membership`, {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
+  // Get current user info
+  const currentUserId = parseInt(localStorage.getItem("userId"), 10);
+  const token = localStorage.getItem("token");
 
-      if (!response.ok) {
-        throw new Error("You are no longer a member of this group.");
+  try {
+    // Verify group membership
+    const membershipResponse = await fetch(`/api/groupMembers/${currentGroupId}/verify-membership`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       }
+    });
 
-      input.value = "";
-      
-      const newMsg = {
-        senderId: userId,
-        groupId: currentGroupId,
-        message: text,
-        createdAt: new Date().toISOString(),
-      };
-      
-      socket.emit("sendGroupMessage", newMsg);
-    } catch (error) {
-      alert(error.message);
+    if (!membershipResponse.ok) {
+      throw new Error("You are no longer a member of this group.");
+    }
+
+    // Get user details
+    const userResponse = await fetch(`/api/auth/user`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!userResponse.ok) {
+      throw new Error("Failed to get user details.");
+    }
+
+    const userData = await userResponse.json();
+
+    // Clear input early for better UX
+    input.value = "";
+    
+    // Create message with complete user info
+    const newMsg = {
+      senderId: currentUserId,
+      groupId: currentGroupId,
+      message: text,
+      createdAt: new Date().toISOString(),
+      User: {
+        id: currentUserId,
+        name: userData.name
+      }
+    };
+    
+    // Emit message through socket
+    socket.emit("sendGroupMessage", newMsg);
+
+    // Add message to UI immediately for instant feedback
+    renderMessages([{
+      ...newMsg,
+      id: 'temp-' + Date.now(), // Temporary ID until server confirms
+      senderId: currentUserId,
+      User: {
+        id: currentUserId,
+        name: userData.name
+      }
+    }]);
+
+  } catch (error) {
+    console.error("Error sending message:", error);
+    alert(error.message);
+    
+    if (error.message.includes("no longer a member")) {
       removedGroups.add(currentGroupId);
       resetCurrentGroup();
     }
-  });
+    
+    // Restore message text in case of error
+    input.value = text;
+  }
+});
 
   // Logout Handler
   document.getElementById("logoutBtn").addEventListener("click", () => {
