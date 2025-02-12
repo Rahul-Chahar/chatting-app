@@ -52,7 +52,7 @@ app.use('/api/groupMembers', groupMemberRoutes); // For managing group membershi
 const socketController = require('./controllers/socketController');
 socketController(io);
 
-// Start the server after syncing the database.
+// Start the server after syncing the Database.
 db.sequelize.sync().then(() => {
   console.log("Database synced successfully.");
   const PORT = process.env.PORT || 3000;
