@@ -11,6 +11,12 @@ module.exports = function(io) {
       socket.join("group_" + groupId);
     });
 
+    // Leave a group room.
+    socket.on('leaveGroup', (groupId) => {
+      console.log(`Socket ${socket.id} leaving group ${groupId}`);
+      socket.leave("group_" + groupId);
+    });
+
     // Listen for new group messages.
 socket.on('sendGroupMessage', async (data) => {
   console.log("Received group message:", data);

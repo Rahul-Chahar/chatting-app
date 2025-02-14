@@ -16,10 +16,22 @@ module.exports = (sequelize, DataTypes) => {
     },
     message: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,  // Allow null for file-only messages
+    },
+    fileUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    fileType: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    fileName: {
+      type: DataTypes.STRING,
+      allowNull: true,
     }
   }, {
-    timestamps: true, // createdAt and updatedAt will be added
+    timestamps: true,
   });
   return GroupMessage;
 };
